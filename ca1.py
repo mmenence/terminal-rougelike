@@ -3,6 +3,7 @@
 
 import random
 from random import randint
+from tokenize import Special
 
 
 
@@ -10,7 +11,7 @@ from random import randint
 
 
 #for testing purposes, replace later
-level = 0
+depth = 0
 
 ###         player code         ###
 
@@ -108,8 +109,8 @@ def create_player_random():
 class enemy:
     def __init__(self, **kwargs) -> None:
         #setting up their basic stats
-        self.health = kwargs["health"] + level
-        self.ac = kwargs["ac"] + level
+        self.health = kwargs["health"] + depth
+        self.ac = kwargs["ac"] + depth
         self.damage = kwargs["damage"] #level scaling is added when calculating damage
         self.resistances = kwargs["resistances"]
         self.weaknesses = kwargs["weaknesses"]
@@ -117,7 +118,7 @@ class enemy:
     #letting the monster take damage and checking if its still alive
     def take_damage(self, damage) -> bool:
         self.health -= damage
-        if self.health > 0:
+        if int(self.health) > 0:
             return True
         else:
             return False
@@ -217,5 +218,254 @@ class room:
         else:
             self.special_room = kwargs["special_room"]
         
+    
+
+
+            ###         level class         ###
+
+#level class
+class level:
+
+
+
+                ###         generating the level            ###
+
+    # was this the most legible or line-efficient method for writhing this out?
+    # absolutely not. but it was definitely the most time efficient.
+    # skip to line ~461 if you cant be bothered reading through it all
+    # (its mostly copy-pasted with minor changes)
+
+    # explanation for function is:
+    # randomly decide room adjacent to current (first starts from 0,0)
+    # if room space is occupied, choose a random non-special room and attempt to build off of that
+    # if room is unoccupied create a new instance of a room and add to relavent lists
+    # if it is time for a special room, generate that instead (boss, key, fountain, shop)
+
+    def __init__(self) -> None:
+
+        rooms = [room(co_ords = [0,0], special_room = None)]
+
+        #list of rooms so program doesnt have to go into every instance of a room later
+        occupied_rooms = [[0,0]]
+        special_rooms = []
+
+        #for level generation
+        current_room = [0,0]
+        next_room = [0,0]
+
         
+        #generating the level
+        while len(rooms) < 5:
+
+            locat_int = randint(0, 4)
+
+            #up
+            if locat_int == 0:
+                next_room = [next_room[0], next_room[1]+1]
+            #down
+            elif locat_int == 1:
+                next_room = [next_room[0], next_room[1]-1]
+            #left
+            elif locat_int == 2:
+                next_room = [next_room[0]-1, next_room[1]]
+            #right
+            elif locat_int == 3:
+                next_room = [next_room[0], next_room[1]]
+            
+            #checking if space is occupied, if not create a room. if so, try to build off another room
+            if next_room not in occupied_rooms:
+                rooms.append(room(co_ords = next_room, special_room = None))
+                current_room = next_room
+                occupied_rooms.append(current_room)
+            else:
+                current_room = random.choice(occupied_rooms)
+
+        #generating boss room
+        while len(special_rooms) == 0:
+
+            locat_int = randint(0, 4)
+
+            #up
+            if locat_int == 0:
+                next_room = [next_room[0], next_room[1]+1]
+            #down
+            elif locat_int == 1:
+                next_room = [next_room[0], next_room[1]-1]
+            #left
+            elif locat_int == 2:
+                next_room = [next_room[0]-1, next_room[1]]
+            #right
+            elif locat_int == 3:
+                next_room = [next_room[0], next_room[1]]
+            
+            #checking if space is occupied, if not create a room. if so, try to build off another room
+            if next_room not in occupied_rooms and next_room not in special_rooms:
+                rooms.append(room(co_ords = next_room, special_room = "boss"))
+                current_room = [0,0]
+                special_rooms.append(next_room)
+            else:
+                current_room = random.choice(occupied_rooms)
+
+
+        #more rooms
+        while len(rooms) < 8:
+
+            locat_int = randint(0, 4)
+
+            #up
+            if locat_int == 0:
+                next_room = [next_room[0], next_room[1]+1]
+            #down
+            elif locat_int == 1:
+                next_room = [next_room[0], next_room[1]-1]
+            #left
+            elif locat_int == 2:
+                next_room = [next_room[0]-1, next_room[1]]
+            #right
+            elif locat_int == 3:
+                next_room = [next_room[0], next_room[1]]
+            
+            #checking if space is occupied, if not create a room. if so, try to build off another room
+            if next_room not in occupied_rooms and next_room not in special_rooms:
+                rooms.append(room(co_ords = next_room, special_room = None))
+                current_room = next_room
+                occupied_rooms.append(current_room)
+            else:
+                current_room = random.choice(occupied_rooms)
+
         
+        #generating key room
+        while len(special_rooms) == 1:
+
+            locat_int = randint(0, 4)
+
+            #up
+            if locat_int == 0:
+                next_room = [next_room[0], next_room[1]+1]
+            #down
+            elif locat_int == 1:
+                next_room = [next_room[0], next_room[1]-1]
+            #left
+            elif locat_int == 2:
+                next_room = [next_room[0]-1, next_room[1]]
+            #right
+            elif locat_int == 3:
+                next_room = [next_room[0], next_room[1]]
+            
+            #checking if space is occupied, if not create a room. if so, try to build off another room
+            if next_room not in occupied_rooms and next_room not in special_rooms:
+                rooms.append(room(co_ords = next_room, special_room = "key"))
+                current_room = [0,0]
+                special_rooms.append(next_room)
+            else:
+                current_room = random.choice(occupied_rooms)
+
+        
+        #more rooms
+        while len(rooms) < 11:
+
+            locat_int = randint(0, 4)
+
+            #up
+            if locat_int == 0:
+                next_room = [next_room[0], next_room[1]+1]
+            #down
+            elif locat_int == 1:
+                next_room = [next_room[0], next_room[1]-1]
+            #left
+            elif locat_int == 2:
+                next_room = [next_room[0]-1, next_room[1]]
+            #right
+            elif locat_int == 3:
+                next_room = [next_room[0], next_room[1]]
+            
+            #checking if space is occupied, if not create a room. if so, try to build off another room
+            if next_room not in occupied_rooms and next_room not in special_rooms:
+                rooms.append(room(co_ords = next_room, special_room = None))
+                current_room = next_room
+                occupied_rooms.append(current_room)
+            else:
+                current_room = random.choice(occupied_rooms)
+
+        
+        #generating key room
+        while len(special_rooms) == 2:
+
+            locat_int = randint(0, 4)
+
+            #up
+            if locat_int == 0:
+                next_room = [next_room[0], next_room[1]+1]
+            #down
+            elif locat_int == 1:
+                next_room = [next_room[0], next_room[1]-1]
+            #left
+            elif locat_int == 2:
+                next_room = [next_room[0]-1, next_room[1]]
+            #right
+            elif locat_int == 3:
+                next_room = [next_room[0], next_room[1]]
+            
+            #checking if space is occupied, if not create a room. if so, try to build off another room
+            if next_room not in occupied_rooms and next_room not in special_rooms:
+                rooms.append(room(co_ords = next_room, special_room = "fountain"))
+                current_room = [0,0]
+                special_rooms.append(next_room)
+            else:
+                current_room = random.choice(occupied_rooms)
+
+        #more rooms
+        while len(rooms) > 13:
+
+            locat_int = randint(0, 4)
+
+            #up
+            if locat_int == 0:
+                next_room = [next_room[0], next_room[1]+1]
+            #down
+            elif locat_int == 1:
+                next_room = [next_room[0], next_room[1]-1]
+            #left
+            elif locat_int == 2:
+                next_room = [next_room[0]-1, next_room[1]]
+            #right
+            elif locat_int == 3:
+                next_room = [next_room[0], next_room[1]]
+            
+            #checking if space is occupied, if not create a room. if so, try to build off another room
+            if next_room not in occupied_rooms and next_room not in special_rooms:
+                rooms.append(room(co_ords = next_room, special_room = None))
+                current_room = next_room
+                occupied_rooms.append(current_room)
+            else:
+                current_room = random.choice(occupied_rooms)
+
+        
+        #generating key room
+        while len(special_rooms) == 3:
+
+            locat_int = randint(0, 4)
+
+            #up
+            if locat_int == 0:
+                next_room = [next_room[0], next_room[1]+1]
+            #down
+            elif locat_int == 1:
+                next_room = [next_room[0], next_room[1]-1]
+            #left
+            elif locat_int == 2:
+                next_room = [next_room[0]-1, next_room[1]]
+            #right
+            elif locat_int == 3:
+                next_room = [next_room[0], next_room[1]]
+            
+            #checking if space is occupied, if not create a room. if so, try to build off another room
+            if next_room not in occupied_rooms and next_room not in special_rooms:
+                rooms.append(room(co_ords = next_room, special_room = "shop"))
+                current_room = [0,0]
+                special_rooms.append(next_room)
+            else:
+                current_room = random.choice(occupied_rooms)
+
+
+#h = level()+
