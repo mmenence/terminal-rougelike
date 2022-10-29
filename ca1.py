@@ -1,9 +1,14 @@
 #Joseph Paul Crowley
 #121384736
 
+
 import random
 from random import randint
-from tokenize import Special
+
+
+
+
+
 
 
 
@@ -12,6 +17,8 @@ from tokenize import Special
 
 #for testing purposes, replace later
 depth = 0
+player = None
+
 
 ###         player code         ###
 
@@ -39,10 +46,36 @@ class Player:
         self.health = 10 + int(self.Con)/2 - 5
         self.mana = 10 + int(self.Wis)/2 - 5
 
+        self.co_ords = [0,0]
+
+
+    #prints stats to screen
+    def display_stats(self):
+
+        print("health: " + self.health)
+        print("mana: " + self.mana)
+
+        print("")
+
+        print("Strength: " + self.Str)
+        print("Dexterity: " + self.Dex)
+        print("Constitution: " + self.Con)
+        print("Intelligence: " + self.Int)
+        print("Wisdom: " + self.Wis)
+        print("Charisma: " + self.Cha)
+
+        print("")
+
+        print("Weapon: " + self.weapon)
+        print("magic: " + self.magic)
+        print("armour: " + self.armour)
+        
 
 
 
-#custom-generate a player character
+
+
+#custom-generate a player character  --DELETE LATER
 def create_player_custom():
     try:
         #get their stats
@@ -81,7 +114,7 @@ def create_player_custom():
         print("please check your input and try again")
 
 
-#creating a player with random stats
+#creating a player with random stats --DELETE LATER
 def create_player_random():
     player = Player(
         Str = randint(3, 19), 
@@ -94,7 +127,7 @@ def create_player_random():
         magic = random.choice(["fireball", "lightning bolt", "magic quake"]), 
         armour = random.choice(["leather", "breastplate", "plate" ]) )
     
-
+   
 
 
 
@@ -116,7 +149,30 @@ class enemy:
         self.weaknesses = kwargs["weaknesses"]
 
     #letting the monster take damage and checking if its still alive
-    def take_damage(self, damage) -> bool:
+    def take_damage(self, weapon) -> bool:
+
+        #determining type and amount of damage
+        if weapon == "mace":
+            damage = randint(1,9) + player.Str
+        elif weapon == "sword":
+            damage = randint(1,7) + player.Str
+        elif weapon == "spear":
+            damage = randint(1,5) + player.Str
+        elif weapon == "fireball":
+            damage = randint(1,8) + player.Int
+        elif weapon == "lightning bolt":
+            damage = randint(1,8) + player.Int
+        elif weapon == "magic quake":
+            damage = randint(1,8) + player.Int
+
+
+        #reistance and weaknesses
+        if weapon in self.resistances:
+            damage /= 2
+        elif weapon in self.weaknesses:
+           damage *= 2
+
+
         self.health -= damage
         if int(self.health) > 0:
             return True
@@ -209,7 +265,7 @@ class room:
         self.enemies = []
         #if not a special room, populate with 1-3 normal enemies, if its a boss, populate with a boss. if its a special room but not a boss, leave empty
         if kwargs["special_room"] is None:
-            for i in range (randint(0,3)):
+            for i in range (randint(1,4)):
                 self.enemies.append(random.choice([skeleton(), goblin(), living_armour()]))
                 self.special_room = None
         elif kwargs["special_room"] == "boss":
@@ -224,7 +280,7 @@ class room:
             ###         level class         ###
 
 #level class
-class level:
+class Level:
 
 
 
@@ -243,229 +299,439 @@ class level:
 
     def __init__(self) -> None:
 
-        rooms = [room(co_ords = [0,0], special_room = None)]
+        self.rooms = [room(co_ords = [0,0], special_room = None)]
 
         #list of rooms so program doesnt have to go into every instance of a room later
-        occupied_rooms = [[0,0]]
-        special_rooms = []
+        self.occupied_rooms = [[0,0]]
+        self.special_rooms = []
 
         #for level generation
-        current_room = [0,0]
-        next_room = [0,0]
+        self.current_room = [0,0]
+        self.next_room = [0,0]
 
         
         #generating the level
-        while len(rooms) < 5:
+        while len(self.rooms) < 5:
 
             locat_int = randint(0, 4)
 
             #up
             if locat_int == 0:
-                next_room = [next_room[0], next_room[1]+1]
+                self.next_room = [self.next_room[0], self.next_room[1]+1]
             #down
             elif locat_int == 1:
-                next_room = [next_room[0], next_room[1]-1]
+                self.next_room = [self.next_room[0], self.next_room[1]-1]
             #left
             elif locat_int == 2:
-                next_room = [next_room[0]-1, next_room[1]]
+                self.next_room = [self.next_room[0]-1, self.next_room[1]]
             #right
             elif locat_int == 3:
-                next_room = [next_room[0], next_room[1]]
+                self.next_room = [self.next_room[0], self.next_room[1]]
             
             #checking if space is occupied, if not create a room. if so, try to build off another room
-            if next_room not in occupied_rooms:
-                rooms.append(room(co_ords = next_room, special_room = None))
-                current_room = next_room
-                occupied_rooms.append(current_room)
+            if self.next_room not in self.occupied_rooms:
+                self.rooms.append(room(co_ords = self.next_room, special_room = None))
+                self.current_room = self.next_room
+                self.occupied_rooms.append(self.current_room)
             else:
-                current_room = random.choice(occupied_rooms)
+                self.current_room = random.choice(self.occupied_rooms)
 
         #generating boss room
-        while len(special_rooms) == 0:
+        while len(self.special_rooms) == 0:
 
             locat_int = randint(0, 4)
 
             #up
             if locat_int == 0:
-                next_room = [next_room[0], next_room[1]+1]
+                self.next_room = [self.next_room[0], self.next_room[1]+1]
             #down
             elif locat_int == 1:
-                next_room = [next_room[0], next_room[1]-1]
+                self.next_room = [self.next_room[0], self.next_room[1]-1]
             #left
             elif locat_int == 2:
-                next_room = [next_room[0]-1, next_room[1]]
+                self.next_room = [self.next_room[0]-1, self.next_room[1]]
             #right
             elif locat_int == 3:
-                next_room = [next_room[0], next_room[1]]
+                self.next_room = [self.next_room[0], self.next_room[1]]
             
             #checking if space is occupied, if not create a room. if so, try to build off another room
-            if next_room not in occupied_rooms and next_room not in special_rooms:
-                rooms.append(room(co_ords = next_room, special_room = "boss"))
-                current_room = [0,0]
-                special_rooms.append(next_room)
+            if self.next_room not in self.occupied_rooms and self.next_room not in self.special_rooms:
+                self.rooms.append(room(co_ords = self.next_room, special_room = "boss"))
+                self.current_room = [0,0]
+                self.special_rooms.append(self.next_room)
             else:
-                current_room = random.choice(occupied_rooms)
+                self.current_room = random.choice(self.occupied_rooms)
 
 
         #more rooms
-        while len(rooms) < 8:
+        while len(self.rooms) < 8:
 
             locat_int = randint(0, 4)
 
             #up
             if locat_int == 0:
-                next_room = [next_room[0], next_room[1]+1]
+                self.next_room = [self.next_room[0], self.next_room[1]+1]
             #down
             elif locat_int == 1:
-                next_room = [next_room[0], next_room[1]-1]
+                self.next_room = [self.next_room[0], self.next_room[1]-1]
             #left
             elif locat_int == 2:
-                next_room = [next_room[0]-1, next_room[1]]
+                self.next_room = [self.next_room[0]-1, self.next_room[1]]
             #right
             elif locat_int == 3:
-                next_room = [next_room[0], next_room[1]]
+                self.next_room = [self.next_room[0], self.next_room[1]]
             
             #checking if space is occupied, if not create a room. if so, try to build off another room
-            if next_room not in occupied_rooms and next_room not in special_rooms:
-                rooms.append(room(co_ords = next_room, special_room = None))
-                current_room = next_room
-                occupied_rooms.append(current_room)
+            if self.next_room not in self.occupied_rooms and self.next_room not in self.special_rooms:
+                self.rooms.append(room(co_ords = self.next_room, special_room = None))
+                self.current_room = self.next_room
+                self.occupied_rooms.append(self.current_room)
             else:
-                current_room = random.choice(occupied_rooms)
+                self.current_room = random.choice(self.occupied_rooms)
 
         
         #generating key room
-        while len(special_rooms) == 1:
+        while len(self.special_rooms) == 1:
 
             locat_int = randint(0, 4)
 
             #up
             if locat_int == 0:
-                next_room = [next_room[0], next_room[1]+1]
+                self.next_room = [self.next_room[0], self.next_room[1]+1]
             #down
             elif locat_int == 1:
-                next_room = [next_room[0], next_room[1]-1]
+                self.next_room = [self.next_room[0], self.next_room[1]-1]
             #left
             elif locat_int == 2:
-                next_room = [next_room[0]-1, next_room[1]]
+                self.next_room = [self.next_room[0]-1, self.next_room[1]]
             #right
             elif locat_int == 3:
-                next_room = [next_room[0], next_room[1]]
+                self.next_room = [self.next_room[0], self.next_room[1]]
             
             #checking if space is occupied, if not create a room. if so, try to build off another room
-            if next_room not in occupied_rooms and next_room not in special_rooms:
-                rooms.append(room(co_ords = next_room, special_room = "key"))
-                current_room = [0,0]
-                special_rooms.append(next_room)
+            if self.next_room not in self.occupied_rooms and self.next_room not in self.special_rooms:
+                self.rooms.append(room(co_ords = self.next_room, special_room = "key"))
+                self.current_room = [0,0]
+                self.special_rooms.append(self.next_room)
             else:
-                current_room = random.choice(occupied_rooms)
+                self.current_room = random.choice(self.occupied_rooms)
 
         
         #more rooms
-        while len(rooms) < 11:
+        while len(self.rooms) < 11:
 
             locat_int = randint(0, 4)
 
             #up
             if locat_int == 0:
-                next_room = [next_room[0], next_room[1]+1]
+                self.next_room = [self.next_room[0], self.next_room[1]+1]
             #down
             elif locat_int == 1:
-                next_room = [next_room[0], next_room[1]-1]
+                self.next_room = [self.next_room[0], self.next_room[1]-1]
             #left
             elif locat_int == 2:
-                next_room = [next_room[0]-1, next_room[1]]
+                self.next_room = [self.next_room[0]-1, self.next_room[1]]
             #right
             elif locat_int == 3:
-                next_room = [next_room[0], next_room[1]]
+                self.next_room = [self.next_room[0], self.next_room[1]]
             
             #checking if space is occupied, if not create a room. if so, try to build off another room
-            if next_room not in occupied_rooms and next_room not in special_rooms:
-                rooms.append(room(co_ords = next_room, special_room = None))
-                current_room = next_room
-                occupied_rooms.append(current_room)
+            if self.next_room not in self.occupied_rooms and self.next_room not in self.special_rooms:
+                self.rooms.append(room(co_ords = self.next_room, special_room = None))
+                self.current_room = self.next_room
+                self.occupied_rooms.append(self.current_room)
             else:
-                current_room = random.choice(occupied_rooms)
+                self.current_room = random.choice(self.occupied_rooms)
 
         
         #generating key room
-        while len(special_rooms) == 2:
+        while len(self.special_rooms) == 2:
 
             locat_int = randint(0, 4)
 
             #up
             if locat_int == 0:
-                next_room = [next_room[0], next_room[1]+1]
+                self.next_room = [self.next_room[0], self.next_room[1]+1]
             #down
             elif locat_int == 1:
-                next_room = [next_room[0], next_room[1]-1]
+                self.next_room = [self.next_room[0], self.next_room[1]-1]
             #left
             elif locat_int == 2:
-                next_room = [next_room[0]-1, next_room[1]]
+                self.next_room = [self.next_room[0]-1, self.next_room[1]]
             #right
             elif locat_int == 3:
-                next_room = [next_room[0], next_room[1]]
+                self.next_room = [self.next_room[0], self.next_room[1]]
             
             #checking if space is occupied, if not create a room. if so, try to build off another room
-            if next_room not in occupied_rooms and next_room not in special_rooms:
-                rooms.append(room(co_ords = next_room, special_room = "fountain"))
+            if self.next_room not in self.occupied_rooms and self.next_room not in self.special_rooms:
+                self.rooms.append(room(co_ords = self.next_room, special_room = "fountain"))
                 current_room = [0,0]
-                special_rooms.append(next_room)
+                self.special_rooms.append(self.next_room)
             else:
-                current_room = random.choice(occupied_rooms)
+                self.current_room = random.choice(self.occupied_rooms)
 
         #more rooms
-        while len(rooms) > 13:
+        while len(self.rooms) > 13:
 
             locat_int = randint(0, 4)
 
             #up
             if locat_int == 0:
-                next_room = [next_room[0], next_room[1]+1]
+                self.next_room = [self.next_room[0], self.next_room[1]+1]
             #down
             elif locat_int == 1:
-                next_room = [next_room[0], next_room[1]-1]
+                self.next_room = [self.next_room[0], self.next_room[1]-1]
             #left
             elif locat_int == 2:
-                next_room = [next_room[0]-1, next_room[1]]
+                self.next_room = [self.next_room[0]-1, self.next_room[1]]
             #right
             elif locat_int == 3:
-                next_room = [next_room[0], next_room[1]]
+                self.next_room = [self.next_room[0], self.next_room[1]]
             
             #checking if space is occupied, if not create a room. if so, try to build off another room
-            if next_room not in occupied_rooms and next_room not in special_rooms:
-                rooms.append(room(co_ords = next_room, special_room = None))
-                current_room = next_room
-                occupied_rooms.append(current_room)
+            if self.next_room not in self.occupied_rooms and self.next_room not in self.special_rooms:
+                self.rooms.append(room(co_ords = self.next_room, special_room = None))
+                self.current_room = self.next_room
+                self.occupied_rooms.append(self.current_room)
             else:
-                current_room = random.choice(occupied_rooms)
+                self.current_room = random.choice(self.occupied_rooms)
 
         
         #generating key room
-        while len(special_rooms) == 3:
+        while len(self.special_rooms) == 3:
 
             locat_int = randint(0, 4)
 
             #up
             if locat_int == 0:
-                next_room = [next_room[0], next_room[1]+1]
+                self.next_room = [self.next_room[0], self.next_room[1]+1]
             #down
             elif locat_int == 1:
-                next_room = [next_room[0], next_room[1]-1]
+                self.next_room = [self.next_room[0], self.next_room[1]-1]
             #left
             elif locat_int == 2:
-                next_room = [next_room[0]-1, next_room[1]]
+                self.next_room = [self.next_room[0]-1, self.next_room[1]]
             #right
             elif locat_int == 3:
-                next_room = [next_room[0], next_room[1]]
+                self.next_room = [self.next_room[0], self.next_room[1]]
             
             #checking if space is occupied, if not create a room. if so, try to build off another room
-            if next_room not in occupied_rooms and next_room not in special_rooms:
-                rooms.append(room(co_ords = next_room, special_room = "shop"))
-                current_room = [0,0]
-                special_rooms.append(next_room)
+            if self.next_room not in self.occupied_rooms and self.next_room not in self.special_rooms:
+                self.rooms.append(room(co_ords = self.next_room, special_room = "shop"))
+                self.current_room = [0,0]
+                self.special_rooms.append(self.next_room)
             else:
-                current_room = random.choice(occupied_rooms)
+                self.current_room = random.choice(self.occupied_rooms)
 
 
-#h = level()+
+
+
+            ###         GAME LOOP           ###
+
+
+#initialising the game -simple loop to keep the game running no matter what
+while True:
+
+#character creation
+
+    #custom input
+    if input('To create custom character, type "custom", to use a randomly generated character, enter any other input\n') == "custom":
+ 
+        print("Warning: the game is balanced around stats of 3-18. While I have left it possible to have enough strength to bench press alaska or so little constitution that you die upon starting the game, this is not the intended balance. if you simply wish to destroy everything in the game with little effort however, feel free to do so")
+        try:
+            #get their stats
+            Str = int(input("Strength: "))
+            Dex = int(input("Dexterity: "))
+            Con = int(input("Constitution: "))
+            Int = int(input("Intelligence: "))
+            Wis = int(input("Wisdom: "))
+            Cha = int(input("Charisma: "))
+
+            #equipment
+            
+            #weapon
+            weapon = input("Weapon (Mace, Sword or Spear?): ").lower()
+            if not (weapon == "mace" or weapon == "sword" or weapon == "spear"):
+                raise Exception("Not one of the acceptable weapons")
+
+            #magic
+            magic = input("Spell (Fireball, Lightning bolt or Magic quake?): ").lower()
+            if not (magic == "fireball" or magic == "lightning bolt" or magic == "magic quake"):
+                raise Exception("Not one of the acceptable spells")
+
+            #armour 
+            armour = input("Armour (Leather, Breastplate or Plate?): ").lower()
+            if not (armour == "leather" or armour == "breastplate" or armour == "plate"):
+                raise Exception("Not one of the acceptable armour sets")
+            
+
+            #creating the player object
+            player = Player(Str = Str, Dex = Dex, Con = Con, Int = Int, Wis = Wis, Cha = Cha, weapon = weapon, magic = magic, armour = armour )
+            
+            #display stats at end of both statement so if an error with custom stats occurs, it will not run without the instance of player
+            player.display_stats()
+        
+        except ValueError:
+            print("Please enter a valid non-fraction number")
+        except Exception:
+            print("please check your input and try again")
+
+
+    #random character generator
+    else:
+        player = Player(
+        Str = randint(3, 19), 
+        Dex = randint(3, 19), 
+        Con = randint(3, 19), 
+        Int = randint(3, 19), 
+        Wis = randint(3, 19), 
+        Cha = randint(3, 19), 
+        weapon = random.choice(["mace","sword", "spear" ]), 
+        magic = random.choice(["fireball", "lightning bolt", "magic quake"]), 
+        armour = random.choice(["leather", "breastplate", "plate" ]) )
+
+    #making the first level
+    level = Level()
+
+
+    print(level.rooms[0].enemies)           #REPLACE -showing enemies in current room, replace with actual description
+
+    #while player is not none, player is set to none on game over so the loop is broken
+    while player != None:
+
+        
+
+        #taking the input and treating it
+        #putting the input into lowercase, removing excess spaces, then splitting it into words for easier processing
+        player_input = input().lower().strip().split()
+        
+
+
+                    ###         asessing input          ###
+
+
+        #help command
+        if player_input[0] == "help":
+            if player_input[-1] == "combat":
+                print("-Melee weapon command is: attack [enemy number] with weapon OR attack [enemy number] weapon")
+                print("-Cast spell command is: attack [enemy number] with magic OR attack [enemy number] magic")
+
+            elif player_input[-1] == "movement":
+                print("-Movement command is: move [north, east, south or west]")
+
+            elif player_input[-1] == "shop":
+                print("-Buy item command is: buy [Name of item]")
+
+            elif player_input[-1] == "check":
+                print("-Display inventory command is: check bag")
+                print("-Display map command is: check map")
+                print("-Examine room command is: check room")
+                print("-Display status command is: check status")
+
+            elif player_input[-1] == "misc":
+                print("-Drink potion command is: drink [Potion type]")
+                print("-Drink from fountain command is: drink from fountain OR drink fountain")
+            
+            else:
+                print("Help commands are:")
+                print("-help combat")
+                print("-help movement")
+                print("-help shop")
+                print("-help check")
+                print("-help misc")
+
+
+        #attacking command
+        if player_input[0] == "attack":
+
+            #getting the room the player is in
+            for i in level.rooms:
+                if i.co_ords == player.co_ords:
+
+                    
+                    try:
+
+                        #melee weapon
+
+                        #getting index of enemy in room.enemies
+                        if player_input[-1] == "weapon":
+                            if player_input[1] == "1" or player_input[1] == "one":
+                                e_index = 0
+                            elif player_input[1] == "2" or player_input[1] == "two":
+                                e_index = 1
+                            elif player_input[1] == "3" or player_input[1] == "three":
+                                e_index = 2
+                            else:
+                                #in case index provided is false
+                                raise IndexError 
+
+                            #if enemy has not been defeated yet
+                            if i.enemies[e_index] is not None:
+                                #making the enemy take damage and checking if its dead
+                                if not i.enemies[e_index].take_damage(player.weapon):
+                                    #getting the index of the current room, putting that into the list of rooms, getting the current room class and changing the first enemy to None
+                                    level.rooms[level.rooms.index(i)].enemies[e_index] = None
+                                    print("The enemy has been defeated!")
+
+                            #if enemy does not exist or has been defeated
+                            else:
+                                print("That enemy does not exist")
+
+                        
+                        #magic 
+                        elif player_input[-1] == "magic":
+                            if player_input[1] == "1" or player_input[1] == "one":
+                                e_index = 0
+                            elif player_input[1] == "2" or player_input[1] == "two":
+                                e_index = 1
+                            elif player_input[1] == "3" or player_input[1] == "three":
+                                e_index = 2
+                            else:
+                                #in case index provided is false
+                                raise IndexError
+
+                            #if its magic quake
+                            if player.magic == "magic quake":
+                                #setting the e_index to each enemy 
+                                for e_index in range(len(i.enemies)):
+                                    if i.enemies[e_index] is not None:
+                                    #making the enemy take damage and checking if its dead
+                                        if not i.enemies[e_index].take_damage(player.magic):
+                                            #getting the index of the current room, putting that into the list of rooms, getting the current room class and changing the first enemy to None
+                                            level.rooms[level.rooms.index(i)].enemies[e_index] = None
+                                            print("enemy "+ player_input[1]+" has been defeated!")
+
+                            #if its any other magic
+                            else:
+                                #if enemy has not been defeated yet
+                                if i.enemies[e_index] is not None:
+                                    #making the enemy take damage and checking if its dead
+                                    if not i.enemies[e_index].take_damage(player.magic):
+                                        #getting the index of the current room, putting that into the list of rooms, getting the current room class and changing the first enemy to None
+                                        level.rooms[level.rooms.index(i)].enemies[e_index] = None
+                                        print("The enemy has been defeated!")
+
+                                #if enemy does not exist or has been defeated
+                                else:
+                                    print("That enemy does not exist")
+                                
+
+                    except IndexError:
+                        print("That enemy does not exist")
+
+                    except:
+                        print("Please check input and try again")
+                    
+
+
+
+
+                
+
+    
+    
+    
+
+
+
+
