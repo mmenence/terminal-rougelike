@@ -2,8 +2,11 @@
 #121384736
 
 
+from operator import le
 import random
 from random import randint
+
+from requests import patch
 
 
 
@@ -57,6 +60,8 @@ class Player:
 
         print("health:" , self.health)
         print("mana:" , self.mana)
+        print("gold:" , self.gold)
+
 
         print("")
 
@@ -351,7 +356,7 @@ class Level:
 
     # was this the most legible or line-efficient method for writhing this out?
     # absolutely not. but it was definitely the most time efficient.
-    # skip to line ~461 if you cant be bothered reading through it all
+    # skip to line ~593 if you cant be bothered reading through it all
     # (its mostly copy-pasted with minor changes)
 
     # explanation for function is:
@@ -691,6 +696,10 @@ while True:
         #taking the input and treating it
         #putting the input into lowercase, removing excess spaces, then splitting it into words for easier processing
         player_input = input().lower().strip().split()
+
+        #small check to avoid errors
+        if player_input == []:
+            player_input = [" "]
         
 
 
@@ -862,19 +871,19 @@ while True:
 
                 adjacent_rooms = []
                 #north
-                if [player.co_ords[0], player.co_ords[1]+1] in level.occupied_rooms:
+                if [player.co_ords[0], player.co_ords[1]+1] in (level.occupied_rooms+level.special_rooms):
                     adjacent_rooms.append("north")
                 
                 #south
-                if [player.co_ords[0], player.co_ords[1]-1] in level.occupied_rooms:
+                if [player.co_ords[0], player.co_ords[1]-1] in (level.occupied_rooms+level.special_rooms):
                     adjacent_rooms.append("south")
 
                 #east
-                if [player.co_ords[0]+1, player.co_ords[1]] in level.occupied_rooms:
+                if [player.co_ords[0]+1, player.co_ords[1]] in (level.occupied_rooms+level.special_rooms):
                     adjacent_rooms.append("east")
                 
                 #west
-                if [player.co_ords[0]-1, player.co_ords[1]] in level.occupied_rooms:
+                if [player.co_ords[0]-1, player.co_ords[1]] in (level.occupied_rooms+level.special_rooms):
                     adjacent_rooms.append("west")
 
 
@@ -900,6 +909,84 @@ while True:
                 player.display_stats()
 
             
+            #check whats in player.inventory
+            elif player_input[-1] == "bag":
+
+                print("You have:")
+                for key in player.inventory.keys():
+
+                    if player.inventory[key] is not False:
+                        print(key, ":",  player.inventory[key])
+                    elif key is True:
+                        print(key)
+
+            #checking the map
+            elif player_input[-1] == "map":
+
+                #if player has bought the map
+                if player.inventory["map"] == True:
+
+                    #getting the limits of the map
+                    limits = [[0,0], [0,0]]
+                    for i in (level.occupied_rooms + level.special_rooms):
+
+                        #if x is greater than the max x
+                        if i[0] > limits[0][0]:
+                            limits[0][0] = i[0]
+
+                        #if x is less than the min x
+                        elif i[0] < limits[0][1]:
+                            limits[0][1] = i[0]
+
+                        #if y is greater than the max y
+                        if i[1] > limits[1][0]:
+                            limits[1][0] = i[1]
+
+                        #if y is less than the min y
+                        elif i[1] < limits[1][1]:
+                            limits[1][1] = i[1]
+
+                    # print out the map, starting from the largest y down
+                    for y in range(limits[1][0], limits[1][1] - 1, -1):
+
+                        #the x, starting from min  and going to max
+                        for x in range(limits[0][1], limits[0][0] + 1):
+                            if [x,y] in level.special_rooms:
+                                #boss
+                                if [x,y] == level.special_rooms[0]:
+                                    print("B", end="")
+                                #key
+                                elif [x,y] == level.special_rooms[1]:
+                                    print("K", end = "")
+                                #shop
+                                elif [x,y] == level.special_rooms[-1]:
+                                    print("S", end = "")
+                                #fountain
+                                else:
+                                    print("F", end = "")
+
+                            #if in occupied rooms, print character
+                            elif [x,y] in level.occupied_rooms:
+                                print("□", end = "")
+                            
+                            #if not a room
+                            else:
+                                print(" ", end = "")
+
+                        #newline to denote y change
+                        print("")
+                    
+                    #newline for visual cleanness
+                    print("")
+
+                else:
+                    print("Dont have a map for this floor!")
+
+            else:
+                print("Perhaps you should check your input before you try and check whatever you just put in.")
+
+
+
 
             #FINISH CHECK
             #remember to add an else in case of wrong input 
@@ -907,9 +994,13 @@ while True:
         
         #movement command
         elif player_input[0] == "move":
+            
+            #making sure the function does not attempt to move twice
+            move_patch = False
 
+            #checking the actual room object
             for i in level.rooms:
-                if i.co_ords ==player.co_ords:
+                if i.co_ords ==player.co_ords and not move_patch:
 
                     #if no enemies are present
                     if i.enemies == [] or i.enemies == [None] or i.enemies == [None, None] or i.enemies == [None, None, None]:
@@ -919,6 +1010,8 @@ while True:
                             #checks if room is there (looks in occupied_rooms and special_rooms) or if its a boss room and they have a key
                             if [player.co_ords[0], player.co_ords[1]+1 ] in level.occupied_rooms or [player.co_ords[0], player.co_ords[1]+1 ] in level.special_rooms[1:] or ([player.co_ords[0], player.co_ords[1]+1 ] == level.special_rooms[0] and player.inventory["key"]):
                                 player.co_ords = [player.co_ords[0], player.co_ords[1]+1 ]
+                                move_patch = True
+                            
 
                             #in case its a boss door
                             elif ([player.co_ords[0], player.co_ords[1]+1 ] == level.special_rooms[0] and not player.inventory["key"]):
@@ -931,6 +1024,7 @@ while True:
                             #checks if room is there (looks in occupied_rooms and special_rooms) or if its a boss room and they have a key
                             if [player.co_ords[0], player.co_ords[1]-1 ] in level.occupied_rooms or [player.co_ords[0], player.co_ords[1]-1 ] in level.special_rooms[1:] or ([player.co_ords[0], player.co_ords[1]-1 ] == level.special_rooms[0] and player.inventory["key"]):
                                 player.co_ords = [player.co_ords[0], player.co_ords[1]-1 ]
+                                move_patch = True
 
                             #in case its a boss door
                             elif ([player.co_ords[0], player.co_ords[1]-1 ] == level.special_rooms[0] and not player.inventory["key"]):
@@ -944,6 +1038,7 @@ while True:
                             #checks if room is there (looks in occupied_rooms and special_rooms) or if its a boss room and they have a key
                             if [player.co_ords[0]+1, player.co_ords[1] ] in level.occupied_rooms or [player.co_ords[0]+1, player.co_ords[1] ] in level.special_rooms[1:] or ([player.co_ords[0]+1, player.co_ords[1] ] == level.special_rooms[0] and player.inventory["key"]):
                                 player.co_ords = [player.co_ords[0]+1, player.co_ords[1]]
+                                move_patch = True
 
                             #in case its a boss door
                             elif ([player.co_ords[0]+1, player.co_ords[1] ] == level.special_rooms[0] and not player.inventory["key"]):
@@ -957,6 +1052,7 @@ while True:
                             #checks if room is there (looks in occupied_rooms and special_rooms) or if its a boss room and they have a key
                             if [player.co_ords[0]-1, player.co_ords[1] ] in level.occupied_rooms or [player.co_ords[0]-1, player.co_ords[1] ] in level.special_rooms[1:] or ([player.co_ords[0]-1, player.co_ords[1] ] == level.special_rooms[0] and player.inventory["key"]):
                                 player.co_ords = [player.co_ords[0]-1, player.co_ords[1]]
+                                move_patch = True
 
                             #in case its a boss door
                             elif ([player.co_ords[0]-1, player.co_ords[1] ] == level.special_rooms[0] and not player.inventory["key"]):
@@ -978,7 +1074,10 @@ while True:
                                 
                                 #key room
                                 elif i.co_ords == level.special_rooms[1]:
-                                    print("The room contains a key! \nYou place the key in your pocket")
+                                    if player.inventory["key"] == False:
+                                        print("The room contains a key! \nYou place the key in your pocket")
+                                    else:
+                                        print("You've already taken the key from here!")
                                     player.inventory["key"] = True
                                 
                                 #fountain
@@ -995,22 +1094,140 @@ while True:
 
                     else:
                         print("You cannot leave the room while being attacked!")
-                        
+        
 
-                        
+        #buy command
+        elif player_input[0] == "buy":
+
+            #checking to see if player is in shop room
+            if level.special_rooms[-1] == player.co_ords:
+
+                #getting the actual shop object
+                for i in level.rooms:
+                    if i.co_ords == player.co_ords:
+
+                        #checking if what they entered was correct
+                        if player_input[-1] in i.inventory.keys(): 
+                            
+                            #checking if they have enough gold
+                            if player.gold >= i.inventory[player_input[-1]] :
+
+                                #taking away that gold and changing equipment
+                                player.gold -= i.inventory[player_input[-1]]
+
+                                #weapon
+                                if player_input[-1] in ["mace", "spear", "sword"]:
+                                    player.weapon = player_input[-1]
+
+                                #magic
+                                elif player_input[-1] in ["fireball", "lightning bolt", "magic quake"]:
+                                    player.weapon = player_input[-1]
+                                
+                                #armour
+                                elif player_input[-1] in ["leather", "breastplate", "plate"]:
+                                    player.weapon = player_input[-1]
+                                
+                                #map
+                                else:
+                                    player.inventory["map"] = True
 
 
+                                #removing the item from the shops inventory
+                                level.rooms[level.rooms.index(i)].inventory.pop(player_input[-1])
+
+                                print("The shopkeeper grunts in approval and hands over the goods")
+
+                            else:
+                                print("You'd want heavier pockets before eyeing that one! (Not enough gold!)" )
+
+
+
+                        elif player_input == ["buy", "health", "potion"] or player_input == ["buy", "mana", "potion"]:
+                             #checking if they have enough gold
+                            if player.gold >= 10*(depth+1) :
+                                player.inventory[(player_input[1], player_input[2])] += 1
+
+
+                        else:
+                            print("Whatever you're asking for, we dont sell that here")
+
+
+            else:
+                print("You have to be in a shop to buy something")
+
+
+        #drinking from fountains and potions
+        elif player_input[0] == "drink":
+            
+            #potions
+            if player_input[-1] == "potion":
+
+                if "health" in player_input and player.inventory["health potion"] > 0:
+                    player.health = 10 + int(player.Con/2 -5)
+                    print("Drank health potion, health fully recovered!")
+
+                elif "mana" in player_input and player.inventory["mana potion"] > 0:
+                    player.mana = 10 + int(player.Wis/2 -5)
+                    print("Drank mana potion, mana fully recovered!")
+
+                else:
+                    print("Not enough potions of that type!")
+            
+            #fountain
+            elif player_input[-1] == "fountain":
+                if level.special_rooms[-2] == player.co_ords:
+                    
+                    #restoring health and mana
+                    player.health = 10 + int(player.Con/2 -5)
+                    player.mana = 10 + int(player.Wis/2 -5)
+
+                    #removing the special qualities form the room
+                    level.special_rooms.remove(player.co_ords)
+                    level.occupied_rooms.append(player.co_ords)
+
+                    print("The fountain crumbles to dust as you feel your body recovering. Health and mana have been restored!")
+
+                else:
+                    print("There is no fountain to drink from")
+
+            else:
+                print("Drink what now?")
+
+
+        elif player_input[0] == "descend":
+
+            #if player in boss room
+            if player.co_ords == level.special_rooms[0]:
+                for i in level.rooms:
+                    #if there are no enemies
+                    if player.co_ords ==i.co_ords and i.enemies == [None]:
+                    
+                        #restoring hp and mana
+                        player.health = 10 + int(player.Con/2 -5)
+                        player.mana = 10 + int(player.Wis/2 -5)
+                        player.inventory["key"] = False
+                        player.inventory["map"] = False
+
+                        #resetting the level and increasing depth
+                        depth += 1
+                        player.co_ords = [0,0]
+                        level = Level()
+
+                        #next level message
+                        print("You descend the ladder, exiting in a room of monsters!")
+
+                        for i in level.rooms:
+                            if i.co_ords == player.co_ords:
+                                if not None in i.enemies and i.enemies != []:
+                                    print("You are attacked by monsters!")
+                                    
+                                    for e in i.enemies:
+                                        print("Monster" , i.enemies.index(e) + 1, ": a", e.name )
                     
 
+            else:
+                print("Only the boss room has a ladder!")
 
-
-
-                
-
-    
-    
-    
-
-
-
-
+        #if input does not match any command
+        else:
+            print("Please check input and try again")
