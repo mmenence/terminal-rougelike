@@ -635,8 +635,8 @@ while True:
         #help command
         if player_input[0] == "help":
             if player_input[-1] == "combat":
-                print("-Melee weapon command is: attack [enemy number] with weapon OR attack [enemy number] weapon")
-                print("-Cast spell command is: attack [enemy number] with magic OR attack [enemy number] magic")
+                print("-Melee weapon command is: attack [enemy number] with weapon OR attack [enemy number] weapon, e.g attack two weapon")
+                print("-Cast spell command is: attack [enemy number] with magic OR attack [enemy number] magic, e.g attack three magic")
 
             elif player_input[-1] == "movement":
                 print("-Movement command is: move [north, east, south or west]")
@@ -820,9 +820,9 @@ while True:
                 
                 #print number of doors
                 if len(adjacent_rooms) == 1:
-                    print("A ", condition, "square room, with a door to the ", end="")
+                    print("A", condition, "square room, with a door to the ", end="")
                 else:
-                    print("A ", condition, "square room, with doors to the ", end="")
+                    print("A", condition, "square room, with doors to the ", end="")
 
                 for i in adjacent_rooms[:-1]:
                     print(i, end=", ")
