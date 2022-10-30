@@ -49,6 +49,7 @@ class Player:
         self.mana = 10 + int(self.Wis/2 - 5)
 
         self.co_ords = [0,0]
+        self.gold = 0
 
 
     #prints stats to screen
@@ -162,11 +163,11 @@ class enemy:
             elif weapon == "spear":
                 damage = randint(1,5) + (player.Str // 2 -5)
             elif weapon == "fireball":
-                damage = randint(1,8) + (player.Int // 2 -5)
+                damage = randint(1,12) + (player.Int // 2 -5)
             elif weapon == "lightning bolt":
                 damage = randint(1,8) + (player.Int // 2 -5)
             elif weapon == "magic quake":
-                damage = randint(1,8) + (player.Int // 2 -5)
+                damage = randint(1,6) + (player.Int // 2 -5)
 
             #in case damage is negative or less than zero
             if damage < 0:
@@ -189,7 +190,16 @@ class enemy:
             if int(self.health) > 0:
                 return True
             else:
+                #money
+                money = randint(1, 3) + depth
+                if self.name == "treant" or self.name == "slime" or self.name == "golem":
+                    money += 10 + randint(1 ,5*depth + 5) + randint(depth, depth *10)
+                
+                player.gold += money
+                print(self.name, "dropped", money, "gold!")
+
                 return False
+
 
         else:
             print(random.choice(["The enemy nimbly dodges away from your attack!", "The enemy slips through your attack!", "Your attack is stopped by its armour!"]))
@@ -252,7 +262,7 @@ class living_armour(enemy):
         kwargs["ac"]= 8
         kwargs["damage"]= "1"
         kwargs["resistances"] = ["sword", "magic quake"]
-        kwargs["weaknesses"] = ["pierce", "fireball"]
+        kwargs["weaknesses"] = ["pierce", "lightning bolt"]
         super().__init__(**kwargs)
 
 
@@ -316,6 +326,16 @@ class room:
             self.special_room = kwargs["special_room"]
         else:
             self.special_room = kwargs["special_room"]
+
+        #setting the inventory of a shop
+        if self.special_room == "shop":
+            self.inventory = {
+                random.choice(["mace", "sword", "spear"]): 15*(depth+1),
+                random.choice(["fireball", "lightning bolt", "magic quake"]): 15*(depth+1),
+                random.choice(["leather", "breastplate", "plate"]): 15*(depth+1),
+                "map": 12*(depth+1),
+                "health potion": 10*(depth+1), 
+                "mana potion": 10*(depth+1)}
         
     
 
@@ -377,7 +397,7 @@ class Level:
                 self.current_room = self.next_room
                 self.occupied_rooms.append(self.current_room)
             else:
-                self.current_room = random.choice(self.occupied_rooms)
+                self.next_room = random.choice(self.occupied_rooms)
 
         #generating boss room
         while len(self.special_rooms) == 0:
@@ -404,7 +424,7 @@ class Level:
                 self.special_rooms.append(self.next_room)
                 
             
-            self.current_room = random.choice(self.occupied_rooms)
+            self.next_room = random.choice(self.occupied_rooms)
 
 
         #more rooms
@@ -431,7 +451,7 @@ class Level:
                 self.current_room = self.next_room
                 self.occupied_rooms.append(self.current_room)
             else:
-                self.current_room = random.choice(self.occupied_rooms)
+                self.next_room = random.choice(self.occupied_rooms)
 
         
         #generating key room
@@ -458,7 +478,7 @@ class Level:
                 self.current_room = [0,0]
                 self.special_rooms.append(self.next_room)
 
-            self.current_room = random.choice(self.occupied_rooms)
+            self.next_room = random.choice(self.occupied_rooms)
 
         
         #more rooms
@@ -485,10 +505,10 @@ class Level:
                 self.current_room = self.next_room
                 self.occupied_rooms.append(self.current_room)
             else:
-                self.current_room = random.choice(self.occupied_rooms)
+                self.next_room = random.choice(self.occupied_rooms)
 
         
-        #generating key room
+        #generating fountain room
         while len(self.special_rooms) == 2:
 
             locat_int = randint(0, 4)
@@ -512,7 +532,7 @@ class Level:
                 current_room = [0,0]
                 self.special_rooms.append(self.next_room)
             
-            self.current_room = random.choice(self.occupied_rooms)
+            self.next_room = random.choice(self.occupied_rooms)
 
         #more rooms
         while len(self.rooms) > 13:
@@ -538,10 +558,10 @@ class Level:
                 self.current_room = self.next_room
                 self.occupied_rooms.append(self.current_room)
             else:
-                self.current_room = random.choice(self.occupied_rooms)
+                self.next_room = random.choice(self.occupied_rooms)
 
         
-        #generating key room
+        #generating shop room
         while len(self.special_rooms) == 3:
 
             locat_int = randint(0, 4)
@@ -565,7 +585,7 @@ class Level:
                 self.current_room = [0,0]
                 self.special_rooms.append(self.next_room)
            
-            self.current_room = random.choice(self.occupied_rooms)
+            self.next_room = random.choice(self.occupied_rooms)
 
 
 
@@ -654,7 +674,14 @@ while True:
     level = Level()
 
 
-    print(level.rooms[0].enemies)           #REPLACE -showing enemies in current room, replace with actual description
+    for i in level.rooms:
+                if i.co_ords == player.co_ords:
+                    if not None in i.enemies:
+                        print("You are attacked by a group of monsters!")
+                        
+                        for e in i.enemies:
+                            print("Monster" , i.enemies.index(e) + 1, ": a", e.name )
+    
 
     #while player is not none, player is set to none on game over so the loop is broken
     while player != None:
@@ -738,9 +765,15 @@ while True:
                             if i.enemies[e_index] is not None:
                                 #making the enemy take damage and checking if its dead
                                 if not i.enemies[e_index].take_damage(player.weapon):
+
                                     #getting the index of the current room, putting that into the list of rooms, getting the current room class and changing the first enemy to None
                                     level.rooms[level.rooms.index(i)].enemies[e_index] = None
-                                    print("The enemy has been defeated!")
+
+                                    #if there is no enemies left, end battle
+                                    if i.enemies == [None] or i.enemies == [None, None] or i.enemies == [None, None, None]:
+                                        print("All enemies have been defeated!")
+                                    else:
+                                        print("The enemy has been defeated!")
 
                             #if enemy does not exist or has been defeated
                             else:
@@ -750,41 +783,61 @@ while True:
                         #magic 
                         elif player_input[-1] == "magic":
 
+                            #checking if they have the mana to cast the spell
+                            if (player.magic == "magic quake" and player.mana >= 5) or (player.magic == "fireball" and player.mana >= 4) or (player.magic == "lightning bolt" and player.mana >= 3):
 
-                            if player_input[1] == "1" or player_input[1] == "one":
-                                e_index = 0
-                            elif player_input[1] == "2" or player_input[1] == "two":
-                                e_index = 1
-                            elif player_input[1] == "3" or player_input[1] == "three":
-                                e_index = 2
-                            else:
-                                #in case index provided is false
-                                raise IndexError
+                                #removing mana 
+                                if player.magic == "magic quake":
+                                    player.mana -= 5
+                                elif player.magic == "fireball":
+                                    player.mana -= 4
+                                else:
+                                    player.mana -= 3    
 
-                            #if its magic quake
-                            if player.magic == "magic quake":
-                                #setting the e_index to each enemy 
-                                for e_index in range(len(i.enemies)):
+
+                                if player_input[1] == "1" or player_input[1] == "one":
+                                    e_index = 0
+                                elif player_input[1] == "2" or player_input[1] == "two":
+                                    e_index = 1
+                                elif player_input[1] == "3" or player_input[1] == "three":
+                                    e_index = 2
+                                else:
+                                    #in case index provided is false
+                                    raise IndexError
+
+                                #if its magic quake
+                                if player.magic == "magic quake":
+                                    #setting the e_index to each enemy 
+                                    for e_index in range(len(i.enemies)):
+                                        if i.enemies[e_index] is not None:
+                                        #making the enemy take damage and checking if its dead
+                                            if not i.enemies[e_index].take_damage(player.magic):
+                                                #getting the index of the current room, putting that into the list of rooms, getting the current room class and changing the first enemy to None
+                                                level.rooms[level.rooms.index(i)].enemies[e_index] = None
+                                                print("enemy "+ player_input[1]+" has been defeated!")
+
+                                                if i.enemies == [None] or i.enemies == [None, None] or i.enemies == [None, None, None]:
+                                                    print("All enemies have been defeated!")
+                                                
+
+                                #if its any other magic
+                                else:
+                                    #if enemy has not been defeated yet
                                     if i.enemies[e_index] is not None:
-                                    #making the enemy take damage and checking if its dead
+                                        #making the enemy take damage and checking if its dead
                                         if not i.enemies[e_index].take_damage(player.magic):
                                             #getting the index of the current room, putting that into the list of rooms, getting the current room class and changing the first enemy to None
                                             level.rooms[level.rooms.index(i)].enemies[e_index] = None
-                                            print("enemy "+ player_input[1]+" has been defeated!")
+                                            if i.enemies == [None] or i.enemies == [None, None] or i.enemies == [None, None, None]:
+                                                print("All enemies have been defeated!")
+                                            else:
+                                                print("The enemy has been defeated!")
 
-                            #if its any other magic
+                                    #if enemy does not exist or has been defeated
+                                    else:
+                                        print("That enemy does not exist")
                             else:
-                                #if enemy has not been defeated yet
-                                if i.enemies[e_index] is not None:
-                                    #making the enemy take damage and checking if its dead
-                                    if not i.enemies[e_index].take_damage(player.magic):
-                                        #getting the index of the current room, putting that into the list of rooms, getting the current room class and changing the first enemy to None
-                                        level.rooms[level.rooms.index(i)].enemies[e_index] = None
-                                        print("The enemy has been defeated!")
-
-                                #if enemy does not exist or has been defeated
-                                else:
-                                    print("That enemy does not exist")
+                                print("The spell failed because you ran out of mana!")
 
                         #in case they didnt type weapon or magic
                         else:
@@ -843,7 +896,7 @@ while True:
                 print(player.co_ords, level.occupied_rooms, level.special_rooms)
 
             
-            elif player_input[-1] == "stats":
+            elif player_input[-1] == "status":
                 player.display_stats()
 
             
@@ -855,63 +908,96 @@ while True:
         #movement command
         elif player_input[0] == "move":
 
-            #north
-            if player_input[-1] == "north":
-                #checks if room is there (looks in occupied_rooms and special_rooms) or if its a boss room and they have a key
-                if [player.co_ords[0], player.co_ords[1]+1 ] in level.occupied_rooms or [player.co_ords[0], player.co_ords[1]+1 ] in level.special_rooms[1:] or ([player.co_ords[0], player.co_ords[1]+1 ] == level.special_rooms[0] and player.inventory["key"]):
-                    player.co_ords = [player.co_ords[0], player.co_ords[1]+1 ]
+            for i in level.rooms:
+                if i.co_ords ==player.co_ords:
 
-                #in case its a boss door
-                elif ([player.co_ords[0], player.co_ords[1]+1 ] == level.special_rooms[0] and not player.inventory["key"]):
-                    print("That door requires a key")
+                    #if no enemies are present
+                    if i.enemies == [] or i.enemies == [None] or i.enemies == [None, None] or i.enemies == [None, None, None]:
 
-                else:
-                    print("that room does not exist")
-            #south
-            elif player_input[-1] == "south":
-                #checks if room is there (looks in occupied_rooms and special_rooms) or if its a boss room and they have a key
-                if [player.co_ords[0], player.co_ords[1]-1 ] in level.occupied_rooms or [player.co_ords[0], player.co_ords[1]-1 ] in level.special_rooms[1:] or ([player.co_ords[0], player.co_ords[1]-1 ] == level.special_rooms[0] and player.inventory["key"]):
-                    player.co_ords = [player.co_ords[0], player.co_ords[1]-1 ]
+                        #north
+                        if player_input[-1] == "north":
+                            #checks if room is there (looks in occupied_rooms and special_rooms) or if its a boss room and they have a key
+                            if [player.co_ords[0], player.co_ords[1]+1 ] in level.occupied_rooms or [player.co_ords[0], player.co_ords[1]+1 ] in level.special_rooms[1:] or ([player.co_ords[0], player.co_ords[1]+1 ] == level.special_rooms[0] and player.inventory["key"]):
+                                player.co_ords = [player.co_ords[0], player.co_ords[1]+1 ]
 
-                #in case its a boss door
-                elif ([player.co_ords[0], player.co_ords[1]-1 ] == level.special_rooms[0] and not player.inventory["key"]):
-                    print("That door requires a key")
+                            #in case its a boss door
+                            elif ([player.co_ords[0], player.co_ords[1]+1 ] == level.special_rooms[0] and not player.inventory["key"]):
+                                print("That door requires a key")
 
-                else:
-                    print("that room does not exist")
-            
-            #east
-            elif player_input[-1] == "east":
-                #checks if room is there (looks in occupied_rooms and special_rooms) or if its a boss room and they have a key
-                if [player.co_ords[0]+1, player.co_ords[1] ] in level.occupied_rooms or [player.co_ords[0]+1, player.co_ords[1] ] in level.special_rooms[1:] or ([player.co_ords[0]+1, player.co_ords[1] ] == level.special_rooms[0] and player.inventory["key"]):
-                    player.co_ords = [player.co_ords[0]+1, player.co_ords[1]]
+                            else:
+                                print("that room does not exist")
+                        #south
+                        elif player_input[-1] == "south":
+                            #checks if room is there (looks in occupied_rooms and special_rooms) or if its a boss room and they have a key
+                            if [player.co_ords[0], player.co_ords[1]-1 ] in level.occupied_rooms or [player.co_ords[0], player.co_ords[1]-1 ] in level.special_rooms[1:] or ([player.co_ords[0], player.co_ords[1]-1 ] == level.special_rooms[0] and player.inventory["key"]):
+                                player.co_ords = [player.co_ords[0], player.co_ords[1]-1 ]
 
-                #in case its a boss door
-                elif ([player.co_ords[0]+1, player.co_ords[1] ] == level.special_rooms[0] and not player.inventory["key"]):
-                    print("That door requires a key")
+                            #in case its a boss door
+                            elif ([player.co_ords[0], player.co_ords[1]-1 ] == level.special_rooms[0] and not player.inventory["key"]):
+                                print("That door requires a key")
 
-                else:
-                    print("that room does not exist")
-            
-             #west
-            elif player_input[-1] == "west":
-                #checks if room is there (looks in occupied_rooms and special_rooms) or if its a boss room and they have a key
-                if [player.co_ords[0]-1, player.co_ords[1] ] in level.occupied_rooms or [player.co_ords[0]-1, player.co_ords[1] ] in level.special_rooms[1:] or ([player.co_ords[0]-1, player.co_ords[1] ] == level.special_rooms[0] and player.inventory["key"]):
-                    player.co_ords = [player.co_ords[0]-1, player.co_ords[1]]
+                            else:
+                                print("that room does not exist")
+                        
+                        #east
+                        elif player_input[-1] == "east":
+                            #checks if room is there (looks in occupied_rooms and special_rooms) or if its a boss room and they have a key
+                            if [player.co_ords[0]+1, player.co_ords[1] ] in level.occupied_rooms or [player.co_ords[0]+1, player.co_ords[1] ] in level.special_rooms[1:] or ([player.co_ords[0]+1, player.co_ords[1] ] == level.special_rooms[0] and player.inventory["key"]):
+                                player.co_ords = [player.co_ords[0]+1, player.co_ords[1]]
 
-                #in case its a boss door
-                elif ([player.co_ords[0]-1, player.co_ords[1] ] == level.special_rooms[0] and not player.inventory["key"]):
-                    print("That door requires a key")
+                            #in case its a boss door
+                            elif ([player.co_ords[0]+1, player.co_ords[1] ] == level.special_rooms[0] and not player.inventory["key"]):
+                                print("That door requires a key")
 
-                else:
-                    print("that room does not exist")
-            
-            else:
-                print("Please enter a valid direction")
+                            else:
+                                print("that room does not exist")
+                        
+                        #west
+                        elif player_input[-1] == "west":
+                            #checks if room is there (looks in occupied_rooms and special_rooms) or if its a boss room and they have a key
+                            if [player.co_ords[0]-1, player.co_ords[1] ] in level.occupied_rooms or [player.co_ords[0]-1, player.co_ords[1] ] in level.special_rooms[1:] or ([player.co_ords[0]-1, player.co_ords[1] ] == level.special_rooms[0] and player.inventory["key"]):
+                                player.co_ords = [player.co_ords[0]-1, player.co_ords[1]]
 
-            
+                            #in case its a boss door
+                            elif ([player.co_ords[0]-1, player.co_ords[1] ] == level.special_rooms[0] and not player.inventory["key"]):
+                                print("That door requires a key")
 
-                
+                            else:
+                                print("That room does not exist")
+                        
+                        else:
+                            print("Please enter a valid direction")
+
+                        for i in level.rooms:
+                            if i.co_ords == player.co_ords:
+                                if not None in i.enemies and i.enemies != []:
+                                    print("You are attacked by monsters!")
+                                    
+                                    for e in i.enemies:
+                                        print("Monster" , i.enemies.index(e) + 1, ": a", e.name )
+                                
+                                #key room
+                                elif i.co_ords == level.special_rooms[1]:
+                                    print("The room contains a key! \nYou place the key in your pocket")
+                                    player.inventory["key"] = True
+                                
+                                #fountain
+                                elif i.co_ords == level.special_rooms[2]:
+                                    print("Inside the room lays a large fountain, glowing with magic.\nIt looks safe to drink")
+                                
+                                #shop
+                                elif i.co_ords == level.special_rooms[-1]:
+                                    print("While you can't help but wonder why there is a shop in a dungeon, it is there nonetheless\nThe shopkeeper motions for you to buy something")
+                                    print("For sale is:")
+                                    for key in i.inventory.keys():
+                                        print(key, i.inventory[key])
+
+
+                    else:
+                        print("You cannot leave the room while being attacked!")
+                        
+
+                        
 
 
                     
