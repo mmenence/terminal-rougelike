@@ -2,25 +2,13 @@
 #121384736
 
 
-from operator import le
 import random
 from random import randint
 
-from requests import patch
 
 
 
 
-
-
-
-
-
-
-
-
-
-#for testing purposes, replace later
 depth = 0
 player = None
 
@@ -78,68 +66,6 @@ class Player:
         print("magic:" , self.magic)
         print("armour:" , self.armour)
         
-
-
-
-
-
-#custom-generate a player character  --DELETE LATER
-def create_player_custom():
-    try:
-        #get their stats
-        Str = int(input("Strength: "))
-        Dex = int(input("Dexterity: "))
-        Con = int(input("Constitution: "))
-        Int = int(input("Intelligence: "))
-        Wis = int(input("Wisdom: "))
-        Cha = int(input("Charisma: "))
-
-        #equipment
-        
-        #weapon
-        weapon = input("Weapon (Mace, Sword or Spear?): ").lower()
-        if not (weapon == "mace" or weapon == "sword" or weapon == "spear"):
-            raise Exception("Not one of the acceptable weapons")
-
-        #magic
-        magic = input("Spell (Fireball, Lightning bolt or Magic quake?): ").lower()
-        if not (magic == "fireball" or magic == "lightning bolt" or magic == "magic quake"):
-            raise Exception("Not one of the acceptable spells")
-
-        #armour 
-        armour = input("Armour (Leather, Breastplate or Plate?): ").lower()
-        if not (armour == "leather" or armour == "breastplate" or armour == "plate"):
-            raise Exception("Not one of the acceptable armour sets")
-        
-
-        #creating the player object
-        player = Player(Str = Str, Dex = Dex, Con = Con, Int = Int, Wis = Wis, Cha = Cha, weapon = weapon, magic = magic, armour = armour )
-        
-        
-    except ValueError:
-        print("Please enter a valid non-fraction number")
-    except Exception:
-        print("please check your input and try again")
-
-
-#creating a player with random stats --DELETE LATER
-def create_player_random():
-    player = Player(
-        Str = randint(3, 19), 
-        Dex = randint(3, 19), 
-        Con = randint(3, 19), 
-        Int = randint(3, 19), 
-        Wis = randint(3, 19), 
-        Cha = randint(3, 19), 
-        weapon = random.choice(["mace","sword", "spear" ]), 
-        magic = random.choice(["fireball", "lightning bolt", "magic quake"]), 
-        armour = random.choice(["leather", "breastplate", "plate" ]) )
-    
-   
-
-
-
-
 
 
 
@@ -988,8 +914,6 @@ while True:
 
 
 
-            #FINISH CHECK
-            #remember to add an else in case of wrong input 
 
         
         #movement command
@@ -1231,3 +1155,10 @@ while True:
         #if input does not match any command
         else:
             print("Please check input and try again")
+
+
+
+        if player.health <= 0:
+            player = None
+            print("         GAME OVER           ")
+            print("         you died!           ")
