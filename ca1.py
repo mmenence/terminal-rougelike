@@ -828,7 +828,7 @@ while True:
                     print(i, end=", ")
                 print(adjacent_rooms[-1])
 
-                print(player.co_ords, level.occupied_rooms, level.special_rooms)
+                
 
             
             elif player_input[-1] == "status":
@@ -1157,8 +1157,10 @@ while True:
             print("Please check input and try again")
 
 
-
+        #player dying
         if player.health <= 0:
             player = None
+            print("-----------------------------")
             print("         GAME OVER           ")
             print("         you died!           ")
+            print("-----------------------------")
